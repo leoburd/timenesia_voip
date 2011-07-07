@@ -1,0 +1,6 @@
+core = "6.x"
+dependencies[] = "audioblog"
+description = "Provides VoIP Drupal scripts for the timenesia project."
+name = "timenesia voip"
+package = "timenesia"
+project = "timenesia_voip"
