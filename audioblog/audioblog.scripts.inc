@@ -1,8 +1,5 @@
 <?php
 
-foreach (array('audioblog.prompts.inc') as $file) {
-  require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . $file);
-}
 
 /**
  * Implementation of hook_voipscript_get_script_names()
@@ -18,6 +15,8 @@ function audioblog_voipscript_get_script_names() {
  * Implementation of hook_voipscript_load_script()
  */
 function audioblog_voipscript_load_script($script_name, $options=NULL) {
+
+  require(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'audioblog.prompts.inc');
 
   $script = NULL;
   switch($script_name) {
@@ -48,7 +47,7 @@ function audioblog_voipscript_load_script($script_name, $options=NULL) {
       $script->addGoto('go_back');
 
       $script->addLabel('listen_to_audioblogs');
-      $script->addSay('This is where callers will be able to browse through existing audioblogs.');
+$script->addSay('This is where callers will be able to browse through existing audio blog entries.');
       $script->addGoto('script_options');
 
       $script->addLabel('learn_more');
@@ -73,6 +72,7 @@ function audioblog_voipscript_load_script($script_name, $options=NULL) {
         '1' => 'past',
         '2' => 'present',
         '3' => 'future',
+        '#' => 'go_back',
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
@@ -117,12 +117,13 @@ $script->addSay('About to record a story about the future');
       $max_length = AUDIOBLOG_MAX_STORY_DURATION;
       $script->addRecord($prompt, $timeout, $end_key, $max_length);
 
-      $script->addLabel('accept menu');
+      $script->addLabel('accept_menu');
       $prompt = $p_recording_confirmation; 
       $input_options = array(
         '1' => 'play_recording',
-        '#' => 'accept_recording',
+        '2' => 'accept_recording',
         '*' => 'start',
+        '#' => 'go_back',
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
@@ -133,7 +134,7 @@ $script->addSay('About to record a story about the future');
       $script->addGoto('go_back');
 
       $script->addLabel('play_recording');
-      $script->addSay('This is what you recorded: ');
+      $script->addSay($p_recording_playback);
       $script->addSay('%recording_url');
       $script->addGoto('accept_menu');
 

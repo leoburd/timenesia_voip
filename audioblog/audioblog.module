@@ -18,6 +18,15 @@ foreach (array('audioblog.prompts.inc', 'audioblog.scripts.inc') as $file) {
 define('AUDIOBLOG_MAX_STORY_DURATION', 300); // 300 seconds
 
 
+// Node parameters
+
+define('AUDIOBLOG_NODE_TYPE', 'story');
+
+define('AUDIOBLOG_AUDIO_FIELD_NAME', 'field_audioblog_audio');
+
+define('AUDIOBLOG_TYPE_FIELD_NAME', 'field_audioblog_type');
+
+
 // Email parameters
 
 define('AUDIOBLOG_EMAIL_SUBJECT', 'New AUDIOBLOG story of type: @story_type');
@@ -137,8 +146,8 @@ function audioblog_mail($key, &$message, $params) {
                   '@start_time' => $params['start_time'],
                   '@recording_url' => $params['recording_url'], 
                   '@recording_duration' => $params['recording_duration']);
-     $message['subject'] = t(TIMENESIA_EMAIL_SUBJECT, $options);
-     $message['body'] = t(TIMENESIA_EMAIL_BODY, $options);
+     $message['subject'] = t(AUDIOBLOG_EMAIL_SUBJECT, $options);
+     $message['body'] = t(AUDIOBLOG_EMAIL_BODY, $options);
    break;
   }
 }
@@ -147,9 +156,7 @@ function audioblog_mail($key, &$message, $params) {
  * Convert URL into an audiofield
  */
 function audioblog_create_audioblog_node($url, $params=array()) {
-  require(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'idepsca_prompts.inc');
-
-  $node->type = 'story';
+  $node->type = AUDIOBLOG_NODE_TYPE;
   $node->promote = 1;
   $options = array('@story_type' => $params['story_type'],
                '@call_id'=> $params['call_id'], 
@@ -157,12 +164,17 @@ function audioblog_create_audioblog_node($url, $params=array()) {
                '@start_time' => $params['start_time'],
                '@recording_url' => $params['recording_url'], 
                '@recording_duration' => $params['recording_duration']);
-  $node->title = t(TIMENESIA_BLOG_TITLE, $options);
-  $node->body = t(TIMENESIA_BLOG_BODY, $options);
-  $node->field_story_type[0]['value'] = $params['story_type'];
+  $node->title = t(AUDIOBLOG_BLOG_TITLE, $options);
+  $node->body = t(AUDIOBLOG_BLOG_BODY, $options);
+//  $node->field_story_type[0]['value'] = $params['story_type'];
+  $field_name = AUDIOBLOG_TYPE_FIELD_NAME;
+  $field = &$node->$field_name;
+  $field[0]['value'] = $params['story_type'];
   $file = _audioblog_transfer_file($url);
   if($file) {
-    $node->field_audio_story[1]['fid'] = $file['fid'];
+    $field_name = AUDIOBLOG_AUDIO_FIELD_NAME;
+    $field = &$node->$field_name;
+    $field[1]['fid'] = $file['fid'];
   }
   node_save($node);
   return $node;
