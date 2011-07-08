@@ -22,6 +22,8 @@ define('AUDIOBLOG_MAX_STORY_DURATION', 300); // 300 seconds
 
 define('AUDIOBLOG_NODE_TYPE', 'story');
 
+define('AUDIOBLOG_NODE_PROMOTE', 1);
+
 define('AUDIOBLOG_AUDIO_FIELD_NAME', 'field_audioblog_audio');
 
 define('AUDIOBLOG_TYPE_FIELD_NAME', 'field_audioblog_type');
@@ -29,16 +31,16 @@ define('AUDIOBLOG_TYPE_FIELD_NAME', 'field_audioblog_type');
 
 // Email parameters
 
-define('AUDIOBLOG_EMAIL_SUBJECT', 'New AUDIOBLOG story of type: @story_type');
+define('AUDIOBLOG_EMAIL_SUBJECT', 'New AUDIOBLOG story of type: @audioblog_type');
 
-define('AUDIOBLOG_EMAIL_BODY', "story_type: @story_type,\ncall_id: @call_id,\ncaller_number: @caller_number,\nstart_time: @start_time,\nrecording_url: @recording_url,\nrecording_duration: @recording_duration");
+define('AUDIOBLOG_EMAIL_BODY', "audioblog_type: @audioblog_type,\ncall_id: @call_id,\ncaller_number: @caller_number,\nstart_time: @start_time,\nrecording_url: @recording_url,\nrecording_duration: @recording_duration");
 
 
 // Audio blog parameters
 
-define('AUDIOBLOG_BLOG_TITLE', 'New AUDIOBLOG story of type: @story_type');
+define('AUDIOBLOG_BLOG_TITLE', 'New audio blog of type: @audioblog_type');
 
-define('AUDIOBLOG_BLOG_BODY', "story_type: @story_type,\ncall_id: @call_id,\ncaller_number: @caller_number,\nstart_time: @start_time,\nrecording_url: @recording_url,\nrecording_duration: @recording_duration");
+define('AUDIOBLOG_BLOG_BODY', "audioblog_type: @audioblog_type,\ncall_id: @call_id,\ncaller_number: @caller_number,\nstart_time: @start_time,\nrecording_url: @recording_url,\nrecording_duration: @recording_duration");
 
 
 
@@ -92,27 +94,33 @@ function audioblog_admin_form_submit($form, &$form_state) {
 /**
  * Process newly recorded audioblog entries
  */
-function audioblog_recording_callback($story_type, $call_id, $recording_url, $recording_duration) {
-
-  $call_nid = VoipCall::getCidFromCallId($call_id);
-  $call = VoipCall::load($call_nid);
-  $caller_number = $call->getCallerNumber();
-  $start_time = $call->getStartTime();
+function audioblog_recording_callback($call_id, $recording_url, $recording_duration, $audioblog_type=NULL, $node_type=NULL, $audio_field_name=NULL, $type_field_name=NULL) {
 
   $rc = TRUE;
 
   // Log call blast with watchdog
-  $log_message = t("(New audioblog recorded) story_type: $story_type, call_id: $call_id, caller_number: $caller_number, start_time: $start_time, recording_url: $recording_url, recording_duration: $recording_duration");
+  $log_message = t("(New audioblog recorded) call_id: $call_id, caller_number: $caller_number, start_time: $start_time, recording_url: $recording_url, recording_duration: $recording_duration, audioblog_type: $audioblog_type, node_type: $node_type, audio_field_name: $audio_field_name, type_field_name: $type_field_name");
   watchdog('audioblog', $log_message);
 
-  // send email notification
-  $params = array('story_type' => $story_type, 
+  $cid = VoipCall::getCidFromCallId($call_id);
+  $call = VoipCall::load($cid);
+  $caller_number = $call->getCallerNumber();
+  $start_time = $call->getStartTime();
+
+  $params = array(
                   'call_id'=> $call_id, 
                   'caller_number' => $caller_number,
                   'start_time' => $start_time,
                   'recording_url' => $recording_url, 
-                  'recording_duration' => $recording_duration);
-  $to = variable_get('audioblog_email');
+                  'recording_duration' => $recording_duration,
+                  'audioblog_type' => $audioblog_type,  
+                  'node_type' => $node_type,  
+                  'audio_field_name' => $audio_field_name,  
+                  'type_field_name' => $type_field_name,  
+            );
+
+  // send email notification
+  $to = variable_get('audioblog_email', NULL);
   if($to) {
     $mail=drupal_mail('audioblog', 'new_recording', $to, language_default(), $params);
     $rc = $mail['result'];
@@ -122,7 +130,6 @@ function audioblog_recording_callback($story_type, $call_id, $recording_url, $re
   if($rc) {
     audioblog_create_audioblog_node($recording_url, $params);
   }
-
   
   if ($rc){
     return t('Success.');
@@ -140,7 +147,7 @@ function audioblog_mail($key, &$message, $params) {
 
  switch ($key) {
    case 'new_recording':
-     $options = array('@story_type' => $params['story_type'],
+     $options = array('@audioblog_type' => $params['audioblog_type'],
                   '@call_id'=> $params['call_id'], 
                   '@caller_number' => $params['caller_number'],
                   '@start_time' => $params['start_time'],
@@ -153,12 +160,17 @@ function audioblog_mail($key, &$message, $params) {
 }
 
 /**
- * Convert URL into an audiofield
+ * Create an audioblog node
  */
 function audioblog_create_audioblog_node($url, $params=array()) {
-  $node->type = AUDIOBLOG_NODE_TYPE;
-  $node->promote = 1;
-  $options = array('@story_type' => $params['story_type'],
+  $node_type = $params['node_type'];
+  $node->type = $node_type ? $node_type : AUDIOBLOG_NODE_TYPE;
+
+  $node->promote = AUDIOBLOG_NODE_PROMOTE;
+
+  $audioblog_type = $params['audioblog_type'];
+
+  $options = array('@audioblog_type' => $audioblog_type,
                '@call_id'=> $params['call_id'], 
                '@caller_number' => $params['caller_number'],
                '@start_time' => $params['start_time'],
@@ -166,20 +178,33 @@ function audioblog_create_audioblog_node($url, $params=array()) {
                '@recording_duration' => $params['recording_duration']);
   $node->title = t(AUDIOBLOG_BLOG_TITLE, $options);
   $node->body = t(AUDIOBLOG_BLOG_BODY, $options);
-//  $node->field_story_type[0]['value'] = $params['story_type'];
-  $field_name = AUDIOBLOG_TYPE_FIELD_NAME;
-  $field = &$node->$field_name;
-  $field[0]['value'] = $params['story_type'];
+
+  if($audioblog_type) { 
+//  $node->field_audioblog_type[0]['value'] = $params['audioblog_type'];
+    $field_name_tmp = $params['type_field_name'];
+    $field_name = $field_name_tmp ? $field_name_tmp : AUDIOBLOG_TYPE_FIELD_NAME;
+    if($fieldn_name){
+      $field = &$node->$field_name;
+      $field[0]['value'] = $audioblog_type;
+    }
+  }
+
   $file = _audioblog_transfer_file($url);
   if($file) {
-    $field_name = AUDIOBLOG_AUDIO_FIELD_NAME;
+    $field_name_tmp = $params['audio_field_name'];
+    $field_name = $field_name_tmp ? $field_name_tmp : AUDIOBLOG_AUDIO_FIELD_NAME;
     $field = &$node->$field_name;
     $field[1]['fid'] = $file['fid'];
   }
+
   node_save($node);
+
   return $node;
 }
 
+/**
+ * Convert URL into an file field
+ */
 function _audioblog_transfer_file($url, $validators=array()) {
     $filename = rawurldecode(basename($url));
     $filepath = file_create_filename($filename, file_directory_temp());

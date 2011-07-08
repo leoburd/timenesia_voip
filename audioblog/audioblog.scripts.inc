@@ -140,7 +140,8 @@ $script->addSay('About to record a story about the future');
 
       $script->addLabel('accept_recording');
       $script->addSet('callback_result',
-        "^audioblog_recording_callback('$story_type', %call_id, %recording_url, %recording_duration)");
+//        "^audioblog_recording_callback(%call_id, %recording_url, %recording_duration, '$story_type')");
+        "^audioblog_recording_callback(%call_id, %recording_url, %recording_duration, '$story_type', 'memory', 'field_memory_audio')");
       $script->addSay($p_story_accepted);
       $script->addGoto('go_back');
 
