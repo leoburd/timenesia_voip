@@ -3,7 +3,7 @@
  * @file Enables users to create and access audio blog entries via telephone
  */
 
-foreach (array('audioblog.prompts.inc', 'audioblog.scripts.inc') as $file) {
+foreach (array('audioblog.scripts.inc') as $file) {
   require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . $file);
 }
 
