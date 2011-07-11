@@ -7,3 +7,38 @@ foreach (array('timenesia_voip.scripts.inc') as $file) {
   require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . $file);
 }
 
+function _timenesia_voip_save_memory_type($node, $memory_type) {
+  // determine the vocabulary id associated with the memory type
+  $vocab_name = t('When');
+// TODO: make vocab_id static
+  $vocab_id = variable_get('timenesia_voip_vocab_id', NULL); 
+  if(is_null($vocab_id)) {
+    $vocabs = taxonomy_get_vocabularies('memory');
+    foreach ($vocabs as $vocab_object) {
+        if ($vocab_object->name == $vocab_name) {
+          $vocab_id = $vocab_object->vid;
+          variable_set('timenesia_voip_vocab_id', $vocab_id);
+          break;
+        }
+    }
+  }
+dsm($vocab_id, 'vocab_id');
+
+  // determine the term id associated with the memory type
+  $terms= taxonomy_get_term_by_name($memory_type);
+dsm($terms, 'terms');
+  $tid = NULL;
+  foreach($terms as $term) {
+    if($term->vid == $vocab_id) {
+      $tid = $term->tid;
+      break;
+    }
+  }
+dsm($tid, 'tid');
+
+  // save the term id in the node
+  $terms[] = $tid;
+  taxonomy_node_save($node, $terms);
+
+  return;
+}
