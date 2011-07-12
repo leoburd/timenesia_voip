@@ -15,6 +15,7 @@ function audioblog_voipscript_get_script_names() {
  * Implementation of hook_voipscript_load_script()
  */
 function audioblog_voipscript_load_script($script_name, $options=NULL) {
+watchdog('audioblog', "(load_script) name: $script_name, options: ".print_r($options, true));
 
   require(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'audioblog.prompts.inc');
 
@@ -39,7 +40,7 @@ function audioblog_voipscript_load_script($script_name, $options=NULL) {
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($p_main_menu, $input_options, $invalid_msg);
+      $script->addRunIvrMenu($p_main_menu, $input_options);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('record_audioblog');
@@ -76,7 +77,7 @@ $script->addSay('This is where callers will be able to browse through existing a
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($prompt, $input_options, $invalid_msg);
+      $script->addRunIvrMenu($prompt, $input_options);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('past');
@@ -108,7 +109,7 @@ $script->addSay('About to record a story about the future');
     case 'audioblog_record_story':
       $script = new VoipScript('audioblog_record_story');
 
-      $story_type = $options['story_type'];
+      $audioblog_type = $options['story_type'];
 
       $script->addLabel('start');
       $prompt = $p_recording_prompt;
@@ -127,7 +128,7 @@ $script->addSay('About to record a story about the future');
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($prompt, $input_options, $invalid_msg);
+      $script->addRunIvrMenu($prompt, $input_options);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('invalid_option');
@@ -139,9 +140,15 @@ $script->addSay('About to record a story about the future');
       $script->addGoto('accept_menu');
 
       $script->addLabel('accept_recording');
+watchdog('audioblog', "options 1: " . print_r($options, true));
+      $options['node_type'] = 'memory';
+      $options['audio_field_name'] = 'field_memory_audio';
+      $options['audioblog_type'] = $audioblog_type;
+watchdog('audioblog', "options 2: " . print_r($options, true));
+      $serialized_options = serialize($options);
+watchdog('audioblog', "serialized_options: $serialized_options");
       $script->addSet('callback_result',
-//        "^audioblog_recording_callback(%call_id, %recording_url, %recording_duration, '$story_type')");
-        "^audioblog_recording_callback(%call_id, %recording_url, %recording_duration, '$story_type', 'memory', 'field_memory_audio')");
+        "^audioblog_recording_callback(%call_id, %recording_url, %recording_duration, '$serialized_options')");
       $script->addSay($p_story_accepted);
       $script->addGoto('go_back');
 
