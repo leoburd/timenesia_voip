@@ -192,14 +192,6 @@ function audioblog_create_audioblog_node($url, $options=array()) {
 
   $node->promote = AUDIOBLOG_NODE_PROMOTE;
 
-/*****
-  $options = array('@audioblog_type' => $audioblog_type,
-               '@call_id'=> $params['call_id'], 
-               '@caller_number' => $params['caller_number'],
-               '@start_time' => $params['start_time'],
-               '@recording_url' => $params['recording_url'], 
-               '@recording_duration' => $params['recording_duration']);
-******/
   $node->title = t(AUDIOBLOG_BLOG_TITLE, $options);
   $node->body = t(AUDIOBLOG_BLOG_BODY, $options);
 
@@ -241,12 +233,10 @@ function _audioblog_save_category(&$node, $vocab_name, $term_name) {
         }
       }
     }
-dsm($vocab_id, 'new vocab_id');
   }
 
   // determine the term id associated with the term name
   $terms= taxonomy_get_term_by_name($term_name);
-dsm($terms, 'terms');
   $tid = NULL;
   foreach($terms as $term) {
     if($term->vid == $vocab_id) {
@@ -254,13 +244,9 @@ dsm($terms, 'terms');
       break;
     }
   }
-dsm($tid, 'tid');
 
   // save the term id in the node
-// $terms[] = $tid;
-//  taxonomy_node_save($node, $terms);
   $node->taxonomy[$vocab_id][$tid] = $tid;
-//  $node->taxonomy = array($tid);
 
   return;
 }
