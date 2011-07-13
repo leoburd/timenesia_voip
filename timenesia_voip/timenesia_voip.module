@@ -10,6 +10,7 @@ foreach (array('timenesia_voip.scripts.inc') as $file) {
 /**
  * Implementation of hook_nodeapi()
  */
+/***
 function timenesia_voip_nodeapi(&$node, $op, $teaser=NULL, $page=NULL) {
   if($node->type != 'memory'){
     return;
@@ -17,21 +18,16 @@ function timenesia_voip_nodeapi(&$node, $op, $teaser=NULL, $page=NULL) {
 
   switch($op) {
     case "insert":
-      $memory_type = $node->memory_type;
-      _timenesia_voip_save_memory_type($node, $memory_type);
+      $memory_type = $node->audioblog_type;
+      if($memory_type) {
+        $vocabulary_name = t('When');
+        audioblog_save_category($node, $vocabulary_name, $memory_type);
+      }
       break;
   }
 }
 
-
-function _timenesia_voip_save_memory_type($node, $memory_type) {
-
-   $vocabulary_name = t('When');
-   audioblog_save_category($node, $vocabulary_name, $memory_type);
-}
-
-
-function audioblog_save_category($node, $vocab_name, $term_name) {
+function _audioblog_save_category(&$node, $vocab_name, $term_name) {
   // determine the vocabulary id associated with the given node
   static $vocab_id = NULL;
 
@@ -63,8 +59,10 @@ dsm($terms, 'terms');
 dsm($tid, 'tid');
 
   // save the term id in the node
-  $terms[] = $tid;
-  taxonomy_node_save($node, $terms);
+// $terms[] = $tid;
+//  taxonomy_node_save($node, $terms);
+  $node->taxonomy[$vocab_id][$tid] = $tid;
+//  $node->taxonomy = array($tid);
 
-  return;
-}
+  return;}
+*****/
