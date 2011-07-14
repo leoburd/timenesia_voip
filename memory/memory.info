@@ -1,0 +1,5 @@
+core = "6.x"
+description = "Functionality associated with Timenesia's memory type"
+name = "memory"
+package = "timenesia"
+project = "memory"

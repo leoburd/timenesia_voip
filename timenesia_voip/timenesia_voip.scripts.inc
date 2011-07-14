@@ -6,8 +6,9 @@
  */
 function timenesia_voip_voipscript_get_script_names() {
   $script_names[] = 'timenesia_welcome';
+  $script_names[] = 'timenesia_play_destination';
   $script_names[] = 'timenesia_record_options';
-  $script_names[] = 'timenesia_record_story';
+  $script_names[] = 'timenesia_record_memory';
   return $script_names;
 }
 
@@ -15,6 +16,7 @@ function timenesia_voip_voipscript_get_script_names() {
  * Implementation of hook_voipscript_load_script()
  */
 function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
+watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r($options, true));
 
   require(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'timenesia_voip.prompts.inc');
 
@@ -29,32 +31,63 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
       $script = new VoipScript('timenesia_welcome');
       $script->addSetVoice('woman');
 
-      $script->addSay($p_welcome_msg);
+      $script->addSay($p_system_greetings);
 
-      $script->addLabel('main_menu');
-      $script->addSet('try_again', FALSE);
+      $script->addLabel('system_options');
       $input_options = array(
-        '1' => 'record_audioblog',
-        '2' => 'listen_to_audioblogs',
+        '1' => 'go_to_destination',
+        '2' => 'browse_destinations',
         '3' => 'learn_more',
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($p_main_menu, $input_options, $invalid_msg);
+      $script->addRunIvrMenu($p_system_menu, $input_options);
       $script->addGoto('%ivr_option_selected');
 
-      $script->addLabel('record_audioblog');
-      $script->addGosub('timenesia_record_options', $options);
-      $script->addGotoIf('main_menu', '^%try_again == TRUE');
+      $script->addLabel('go_to_destination');
+      $script->addGosub('timenesia_play_destination', $options);
       $script->addGoto('go_back');
 
-      $script->addLabel('listen_to_audioblogs');
-$script->addSay('This is where callers will be able to browse through existing audio blog entries.');
-      $script->addGoto('main_menu');
+      $script->addLabel('browse_destinations');
+$script->addSay('This is where callers will browse through existing destinations.');
+      $script->addGoto('system_options');
 
       $script->addLabel('learn_more');
       $script->addSay($p_system_description);
-      $script->addGoto('main_menu');
+      $script->addGoto('system_options');
+
+      $script->addLabel('invalid_option');
+      $script->addGoto('go_back');
+
+      $script->addLabel('go_back');
+      $script->addSay($p_thank_you);
+      $script->addHangup();
+
+      break;
+
+    case 'timenesia_play_destination':
+      $script = new VoipScript('timenesia_play_destination');
+
+      $script->addSay($p_destination_greetings);
+
+      $script->addLabel('destination_options');
+      $input_options = array(
+        '1' => 'record_memory',
+        '2' => 'listen_to_memories',
+        'i' => 'invalid_option',
+        't' => 'invalid_option'
+      );
+      $script->addRunIvrMenu($p_destination_menu, $input_options);
+      $script->addGoto('%ivr_option_selected');
+
+      $script->addLabel('record_memory');
+$options['memory_destination'] = 25;
+      $script->addGosub('timenesia_record_options', $options);
+      $script->addGoto('go_back');
+
+      $script->addLabel('listen_to_memories');
+$script->addSay('This is where callers will be able to browse through existing memories.');
+      $script->addGoto('destination_options');
 
       $script->addLabel('invalid_option');
       $script->addGoto('go_back');
@@ -69,42 +102,34 @@ $script->addSay('This is where callers will be able to browse through existing a
       $script = new VoipScript('timenesia_record_options');
 
       $script->addLabel('recording_menu');
-      $script->addSet('try_again', FALSE);
       $prompt = $p_recording_menu;
       $input_options = array(
         '1' => 'past',
         '2' => 'present',
         '3' => 'future',
-        '#' => 'back_to_main_menu',
+        '#' => 'go_back',
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($prompt, $input_options, $invalid_msg);
+      $script->addRunIvrMenu($prompt, $input_options);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('past');
-$script->addSay('About to record story about the past.');
-      $options['story_type'] = 'past';
-      $script->addGosub('timenesia_record_story', $options);
-      $script->addGotoIf('recording_menu','^%try_again == TRUE');
+$script->addSay('About to record memory about the past.');
+      $options['memory_type'] = 'past';
+      $script->addGosub('timenesia_record_memory', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('present');
-$script->addSay('About to record a story about the present.');
-      $options['story_type'] = 'present';
-      $script->addGosub('timenesia_record_story', $options);
-      $script->addGotoIf('recording_menu','^%try_again == TRUE');
+$script->addSay('About to record a memory about the present.');
+      $options['memory_type'] = 'present';
+      $script->addGosub('timenesia_record_memory', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('future');
-$script->addSay('About to record a story about the future');
-      $options['story_type'] = 'future';
-      $script->addGosub('timenesia_record_story', $options);
-      $script->addGotoIf('recording_menu','^%try_again == TRUE');
-      $script->addGoto('go_back');
-
-      $script->addLabel('back_to_main_menu');
-      $script->addSet('try_again', TRUE);
+$script->addSay('About to record a memory about the future');
+      $options['memory_type'] = 'future';
+      $script->addGosub('timenesia_record_memory', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('invalid_option');
@@ -115,16 +140,14 @@ $script->addSay('About to record a story about the future');
 
       break;
 
-    case 'timenesia_record_story':
-      $script = new VoipScript('timenesia_record_story');
-
-      $story_type = $options['story_type'];
+    case 'timenesia_record_memory':
+      $script = new VoipScript('timenesia_record_memory');
 
       $script->addLabel('start');
       $prompt = $p_recording_prompt;
       $timeout = 5;
       $end_key = '#';
-      $max_length = 120;
+      $max_length = AUDIOBLOG_MAX_STORY_DURATION;
       $script->addRecord($prompt, $timeout, $end_key, $max_length);
 
       $script->addLabel('accept_menu');
@@ -132,12 +155,12 @@ $script->addSay('About to record a story about the future');
       $input_options = array(
         '1' => 'play_recording',
         '2' => 'accept_recording',
-        '3' => 'start',
-        '#' => 'back_to_recording_menu',
+        '*' => 'start',
+        '#' => 'go_back',
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($prompt, $input_options, $invalid_msg);
+      $script->addRunIvrMenu($prompt, $input_options);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('invalid_option');
@@ -149,14 +172,14 @@ $script->addSay('About to record a story about the future');
       $script->addGoto('accept_menu');
 
       $script->addLabel('accept_recording');
+      $audioblog_options['node_type'] = 'memory';
+      $audioblog_options['audio_field_name'] = 'field_memory_audio';
+      $audioblog_options['audioblog_type'] = $options['memory_type'];
+      $audioblog_options['memory_destination'] = $options['memory_destination'];
+      $serialized_options = serialize($audioblog_options);
       $script->addSet('callback_result',
-//        "^timenesia_recording_callback(%call_id, %recording_url, %recording_duration, '$story_type')");
-        "^audioblog_recording_callback(%call_id, %recording_url, %recording_duration, '$story_type', 'memory', 'field_memory_audio')");
+        "^audioblog_recording_callback(%call_id, %recording_url, %recording_duration, '$serialized_options')");
       $script->addSay($p_story_accepted);
-      $script->addGoto('go_back');
-
-      $script->addLabel('back_to_recording_menu');
-      $script->addSet('try_again', TRUE);
       $script->addGoto('go_back');
 
       $script->addLabel('go_back');

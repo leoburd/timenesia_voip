@@ -124,16 +124,11 @@ watchdog('audioblog', $log_message);
   $caller_number = $call->getCallerNumber();
   $start_time = $call->getStartTime();
 
-  $params = array(
-                  '@call_id'=> $call_id, 
-                  '@caller_number' => $caller_number,
-                  '@start_time' => $start_time,
-                  '@recording_url' => $recording_url, 
-                  '@recording_duration' => $recording_duration,
-            );
-  foreach($options as $option_name => $option_value) {
-    $params["@$option_name"] = $option_value;
-  }
+  $options['call_id'] = $call_id; 
+  $options['caller_number'] = $caller_number;
+  $options['start_time'] = $start_time;
+  $options['recording_url'] = $recording_url; 
+  $options['recording_duration'] = $recording_duration;
 /*******
                   '@node_type' => $options['node_type'],  
                   '@audio_field_name' => $options['audio_field_name'],  
@@ -144,13 +139,13 @@ watchdog('audioblog', $log_message);
   // send email notification
   $to = variable_get('audioblog_email', NULL);
   if($to) {
-    $mail=drupal_mail('audioblog', 'new_recording', $to, language_default(), $params);
+    $mail=drupal_mail('audioblog', 'new_recording', $to, language_default(), $options);
     $rc = $mail['result'];
   }
 
   // create audioblog entry
   if($rc) {
-    audioblog_create_audioblog_node($recording_url, $params);
+    audioblog_create_node($recording_url, $options);
   }
   
   if ($rc){
@@ -169,16 +164,11 @@ function audioblog_mail($key, &$message, $options) {
 
  switch ($key) {
    case 'new_recording':
-/******
-     $options = array('@audioblog_type' => $params['audioblog_type'],
-                  '@call_id'=> $params['call_id'], 
-                  '@caller_number' => $params['caller_number'],
-                  '@start_time' => $params['start_time'],
-                  '@recording_url' => $params['recording_url'], 
-                  '@recording_duration' => $params['recording_duration']);
-******/
-     $message['subject'] = t(AUDIOBLOG_EMAIL_SUBJECT, $options);
-     $message['body'] = t(AUDIOBLOG_EMAIL_BODY, $options);
+     foreach($options as $option_name => $option_value) {
+       $params["@$option_name"] = $option_value;
+     }
+     $message['subject'] = t(AUDIOBLOG_EMAIL_SUBJECT, $params);
+     $message['body'] = t(AUDIOBLOG_EMAIL_BODY, $params);
    break;
   }
 }
@@ -186,16 +176,19 @@ function audioblog_mail($key, &$message, $options) {
 /**
  * Create an audioblog node
  */
-function audioblog_create_audioblog_node($url, $options=array()) {
-  $node_type = $options['@node_type'];
+function audioblog_create_node($url, $options=array()) {
+  $node_type = $options['node_type'];
   $node->type = $node_type ? $node_type : variable_get('audioblog_node_type', 'story');
 
   $node->promote = AUDIOBLOG_NODE_PROMOTE;
 
-  $node->title = t(AUDIOBLOG_BLOG_TITLE, $options);
-  $node->body = t(AUDIOBLOG_BLOG_BODY, $options);
+  foreach($options as $option_name => $option_value) {
+    $params["@$option_name"] = $option_value;
+  }
+  $node->title = t(AUDIOBLOG_BLOG_TITLE, $params);
+  $node->body = t(AUDIOBLOG_BLOG_BODY, $params);
 
-  $audioblog_type = $options['@audioblog_type'];
+  $audioblog_type = $options['audioblog_type'];
   if($audioblog_type) { 
     $vocab_name = t('When');
     _audioblog_save_category($node, $vocab_name, $audioblog_type);
@@ -203,19 +196,30 @@ function audioblog_create_audioblog_node($url, $options=array()) {
 
   $file = _audioblog_transfer_file($url);
   if($file) {
-    $field_name_tmp = $options['@audio_field_name'];
+    $field_name_tmp = $options['audio_field_name'];
     $field_name = $field_name_tmp ? $field_name_tmp : AUDIOBLOG_AUDIO_FIELD_NAME;
     $field = &$node->$field_name;
     $field[1]['fid'] = $file['fid'];
   }
 
+  // add $options elements as fields in the new node
+  foreach($options as $option_name => $option_value) {
+    $node->$option_name = $option_value;
+  }
+
+  // create the node and let the hooks convert the new fields into something useful
   node_save($node);
+
+  // remove the $options fields
+  foreach($options as $option_name => $option_value) {
+    unset($node->$option_name);
+  }
 
   return $node;
 }
 
 /**
- * Set the taxonomy term associated with the term provided
+ * Set the taxonomy term associated with the term name provided
  */
 function _audioblog_save_category(&$node, $vocab_name, $term_name) {
   // determine the vocabulary id associated with the given node
@@ -252,7 +256,7 @@ function _audioblog_save_category(&$node, $vocab_name, $term_name) {
 }
 
 /**
- * Convert URL into an file field
+ * Convert an URL into a file field
  */
 function _audioblog_transfer_file($url, $validators=array()) {
     $filename = rawurldecode(basename($url));
