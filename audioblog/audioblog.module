@@ -107,7 +107,6 @@ function audioblog_admin_form_submit($form, &$form_state) {
 /**
  * Process newly recorded audioblog entries
  */
-//function audioblog_recording_callback($call_id, $recording_url, $recording_duration, $audioblog_type=NULL, $node_type=NULL, $audio_field_name=NULL, $type_field_name=NULL) {
 function audioblog_recording_callback($call_id, $recording_url, $recording_duration, $serialized_options='') {
 
 watchdog('audioblog', "audioblog_recording_callback($call_id, $recording_url, $recording_duration, $serialized_options)");

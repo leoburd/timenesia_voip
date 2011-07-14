@@ -33,27 +33,37 @@ watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r
 
       $script->addSay($p_system_greetings);
 
-      $script->addLabel('system_options');
-      $input_options = array(
-        '1' => 'go_to_destination',
-        '2' => 'browse_destinations',
-        '3' => 'learn_more',
-        'i' => 'invalid_option',
-        't' => 'invalid_option'
-      );
-      $script->addRunIvrMenu($p_system_menu, $input_options);
-      $script->addGoto('%ivr_option_selected');
+      // read destination id
+      $script->addSet('counter', 0); // number of attemtps
 
-      $script->addLabel('go_to_destination');
+      $script->addLabel('system_options');
+      $script->addGetInput($p_system_menu, NULL, '#', 3);
+
+      $script->addSet('destination_id', '%input_digits');
+      $script->addGotoIf('no_input_received', "^%input_digits == ''");
+      $script->addGotoIf('browse_destinations', "^%input_digits == '0'");
+      $script->addGotoIf('learn_more', "^%input_digits == '*'");
+$script->addSay('you typed: %destination_id .');
+      $script->addGoto('play_destination');
+
+      $script->addLabel('no_input_received');
+      $script->addSet('counter', '^%counter + 1');
+      $script->addGotoIf('go_back', '^%counter > 3');
+      $script->addSay($p_try_again);
+      $script->addGoto('system_options');
+
+      $script->addLabel('play_destination');
       $script->addGosub('timenesia_play_destination', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('browse_destinations');
 $script->addSay('This is where callers will browse through existing destinations.');
+      $script->addSet('counter', 0);
       $script->addGoto('system_options');
 
       $script->addLabel('learn_more');
       $script->addSay($p_system_description);
+      $script->addSet('counter', 0);
       $script->addGoto('system_options');
 
       $script->addLabel('invalid_option');
@@ -68,6 +78,7 @@ $script->addSay('This is where callers will browse through existing destinations
     case 'timenesia_play_destination':
       $script = new VoipScript('timenesia_play_destination');
 
+//TODO: this is where we'll use the extensions get_greeting() API
       $script->addSay($p_destination_greetings);
 
       $script->addLabel('destination_options');
@@ -81,7 +92,7 @@ $script->addSay('This is where callers will browse through existing destinations
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('record_memory');
-$options['memory_destination'] = 25;
+//$options['memory_destination'] = 25;
       $script->addGosub('timenesia_record_options', $options);
       $script->addGoto('go_back');
 
@@ -115,19 +126,19 @@ $script->addSay('This is where callers will be able to browse through existing m
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('past');
-$script->addSay('About to record memory about the past.');
+      $script->addSay($p_record_past);
       $options['memory_type'] = 'past';
       $script->addGosub('timenesia_record_memory', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('present');
-$script->addSay('About to record a memory about the present.');
+      $script->addSay($p_record_present);
       $options['memory_type'] = 'present';
       $script->addGosub('timenesia_record_memory', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('future');
-$script->addSay('About to record a memory about the future');
+      $script->addSay($p_record_future);
       $options['memory_type'] = 'future';
       $script->addGosub('timenesia_record_memory', $options);
       $script->addGoto('go_back');
@@ -172,13 +183,10 @@ $script->addSay('About to record a memory about the future');
       $script->addGoto('accept_menu');
 
       $script->addLabel('accept_recording');
-      $audioblog_options['node_type'] = 'memory';
-      $audioblog_options['audio_field_name'] = 'field_memory_audio';
-      $audioblog_options['audioblog_type'] = $options['memory_type'];
-      $audioblog_options['memory_destination'] = $options['memory_destination'];
-      $serialized_options = serialize($audioblog_options);
+      $serialized_options = serialize($options);
       $script->addSet('callback_result',
-        "^audioblog_recording_callback(%call_id, %recording_url, %recording_duration, '$serialized_options')");
+        "^_timenesia_voip_recording_callback(%destination_id, %call_id, %recording_url, %recording_duration, '$serialized_options')");
+// TODO: check callback result
       $script->addSay($p_story_accepted);
       $script->addGoto('go_back');
 
@@ -190,4 +198,14 @@ $script->addSay('About to record a memory about the future');
   return $script;
 }
 
-
+function _timenesia_voip_recording_callback($destination_id, $call_id, $recording_url, $recording_duration, $serialized_options) {
+  $audioblog_options = unserialize($serialized_options);
+  $audioblog_options['node_type'] = 'memory';
+  $audioblog_options['audio_field_name'] = 'field_memory_audio';
+  $audioblog_options['audioblog_type'] = $audioblog_options['memory_type'];
+//TODO: $destination_id will be extension_id, not the memory_destination nid
+  $audioblog_options['memory_destination'] = $destination_id;
+  $serialized_options = serialize($audioblog_options);
+  $rc = audioblog_recording_callback($call_id, $recording_url, $recording_duration, $serialized_options);
+  return $rc;
+}
