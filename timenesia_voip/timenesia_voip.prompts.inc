@@ -31,7 +31,7 @@ $p_thank_you = "Thank you for using the My Dot Tour system.";
 
 $p_destination_greetings = 'Welcome to destination X. ';
 
-$p_destination_menu = 'To record a story, Press 1. To listen to existing stories, Press 2. To go back to the main menu, press the pound key.';
+$p_destination_menu = 'to learn more about this location, type 1. To record a story, Press 2. To listen to existing stories, Press 3. To go back to the main menu, press the pound key.';
 
 
 // Prompts associated with the timenesia_record_options menu

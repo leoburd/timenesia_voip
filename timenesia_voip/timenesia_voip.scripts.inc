@@ -53,7 +53,9 @@ $script->addSay('you typed: %destination_id .');
       $script->addGoto('system_options');
 
       $script->addLabel('play_destination');
-      $script->addGosub('timenesia_play_destination', $options);
+      $options['destination_id'] = '%destination_id';
+      $script->addGosub('timenesia_play_destination_script', $options);
+      $script->addGotoIf('system_options', '^%invalid_extension_number == TRUE');
       $script->addGoto('go_back');
 
       $script->addLabel('browse_destinations');
@@ -75,37 +77,58 @@ $script->addSay('This is where callers will browse through existing destinations
 
       break;
 
-    case 'timenesia_play_destination':
-      $script = new VoipScript('timenesia_play_destination');
+    case 'timenesia_play_destination_script':
+      $script = new VoipScript('timenesia_play_destination_script');
+//----
+      $eid = $options['destination_id'];
+      $extension = voipextension_load($eid);
+      if (!$extension) {
+$script->addSay('Unknown destination number ' . $eid);
+        $script->addSet('invalid_extension_number', TRUE);
+      }
+      else {
+//----
+$script->addSay('Transfering to destination number ' . $eid . ' .');
+        $script->addSet('invalid_extension_number', FALSE);
+        $destination_nid = $extension['module_id'];
+        $node = node_load($destination_nid);
+//        $title = voipnode_get_title($node);
+        $description = voipnode_get_description($node);
+        $greeting = voipnode_get_greeting($node);
+//        $gosub = voipextension_get_script($extension);
+//        $script->addGosub($gosub['script_name'], $gosub['script_arguments']);
 
-//TODO: this is where we'll use the extensions get_greeting() API
-      $script->addSay($p_destination_greetings);
+        $script->addSay($greeting);
 
-      $script->addLabel('destination_options');
-      $input_options = array(
-        '1' => 'record_memory',
-        '2' => 'listen_to_memories',
-        'i' => 'invalid_option',
-        't' => 'invalid_option'
-      );
-      $script->addRunIvrMenu($p_destination_menu, $input_options);
-      $script->addGoto('%ivr_option_selected');
+        $script->addLabel('destination_options');
+        $input_options = array(
+          '1' => 'learn_more',
+          '2' => 'record_memory',
+          '3' => 'listen_to_memories',
+          'i' => 'invalid_option',
+          't' => 'invalid_option'
+        );
+        $script->addRunIvrMenu($p_destination_menu, $input_options);
+        $script->addGoto('%ivr_option_selected');
 
-      $script->addLabel('record_memory');
-//$options['memory_destination'] = 25;
-      $script->addGosub('timenesia_record_options', $options);
-      $script->addGoto('go_back');
+        $script->addLabel('learn_more');
+$script->addSay($description);
+        $script->addGoto('destination_options');
 
-      $script->addLabel('listen_to_memories');
+        $script->addLabel('record_memory');
+        $options['destination_nid'] = $destination_nid;
+        $script->addGosub('timenesia_record_options', $options);
+        $script->addGoto('go_back');
+
+        $script->addLabel('listen_to_memories');
 $script->addSay('This is where callers will be able to browse through existing memories.');
-      $script->addGoto('destination_options');
+        $script->addGoto('destination_options');
 
-      $script->addLabel('invalid_option');
-      $script->addGoto('go_back');
+        $script->addLabel('invalid_option');
+        $script->addGoto('go_back');
 
-      $script->addLabel('go_back');
-      $script->addSay($p_thank_you);
-      $script->addHangup();
+        $script->addLabel('go_back');
+      }
 
       break;
 
@@ -184,8 +207,9 @@ $script->addSay('This is where callers will be able to browse through existing m
 
       $script->addLabel('accept_recording');
       $serialized_options = serialize($options);
+      $destination_nid = $options['destination_nid'];
       $script->addSet('callback_result',
-        "^_timenesia_voip_recording_callback(%destination_id, %call_id, %recording_url, %recording_duration, '$serialized_options')");
+        "^_timenesia_voip_recording_callback($destination_nid, %call_id, %recording_url, %recording_duration, '$serialized_options')");
 // TODO: check callback result
       $script->addSay($p_story_accepted);
       $script->addGoto('go_back');
@@ -198,13 +222,12 @@ $script->addSay('This is where callers will be able to browse through existing m
   return $script;
 }
 
-function _timenesia_voip_recording_callback($destination_id, $call_id, $recording_url, $recording_duration, $serialized_options) {
+function _timenesia_voip_recording_callback($destination_nid, $call_id, $recording_url, $recording_duration, $serialized_options) {
   $audioblog_options = unserialize($serialized_options);
   $audioblog_options['node_type'] = 'memory';
   $audioblog_options['audio_field_name'] = 'field_memory_audio';
   $audioblog_options['audioblog_type'] = $audioblog_options['memory_type'];
-//TODO: $destination_id will be extension_id, not the memory_destination nid
-  $audioblog_options['memory_destination'] = $destination_id;
+  $audioblog_options['memory_destination'] = $destination_nid;
   $serialized_options = serialize($audioblog_options);
   $rc = audioblog_recording_callback($call_id, $recording_url, $recording_duration, $serialized_options);
   return $rc;
