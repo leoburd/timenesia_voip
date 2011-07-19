@@ -44,7 +44,6 @@ watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r
       $script->addGotoIf('no_input_received', "^%input_digits == ''");
       $script->addGotoIf('browse_destinations', "^%input_digits == '0'");
       $script->addGotoIf('learn_more', "^%input_digits == '*'");
-$script->addSay('you typed: %destination_id .');
       $script->addGoto('play_destination');
 
       $script->addLabel('no_input_received');
@@ -56,10 +55,7 @@ $script->addSay('you typed: %destination_id .');
       $script->addLabel('play_destination');
       $options['destination_id'] = '%destination_id';
       $script->addGosub('timenesia_play_destination_script', $options);
-$script->addSay('Back from destination with %invalid_extension_number');
-$script->addLog('%invalid_extension_number == TRUE');
-      $script->addGotoIf('system_options', '^%invalid_extension_number');
-      $script->addGoto('go_back');
+      $script->addGoto('system_options');
 
       $script->addLabel('browse_destinations');
 $script->addSay('This is where callers will browse through existing destinations.');
@@ -88,7 +84,6 @@ $script->addSay('This is where callers will browse through existing destinations
 
     case 'timenesia_play_destination_script':
       $script = new VoipScript('timenesia_play_destination_script');
-//----
       $eid = $options['destination_id'];
       $extension = voipextension_load($eid);
       if (!$extension) {
@@ -96,8 +91,7 @@ $script->addSay('This is where callers will browse through existing destinations
         $script->addSet('invalid_extension_number', TRUE);
       }
       else {
-//----
-$script->addSay('Transfering to destination number ' . $eid . ' .');
+        $script->addSay($p_transferring_to_location . $eid . ' .');
         $script->addSet('invalid_extension_number', FALSE);
         $destination_nid = $extension['module_id'];
         $node = node_load($destination_nid);
@@ -114,6 +108,7 @@ $script->addSay('Transfering to destination number ' . $eid . ' .');
           '1' => 'learn_more',
           '2' => 'record_memory',
           '3' => 'listen_to_memories',
+          '#' => 'go_back',
           'i' => 'invalid_option',
           't' => 'invalid_option'
         );
@@ -127,7 +122,7 @@ $script->addSay($description);
         $script->addLabel('record_memory');
         $options['destination_nid'] = $destination_nid;
         $script->addGosub('timenesia_record_options', $options);
-        $script->addGoto('go_back');
+        $script->addGoto('destination_options');
 
         $script->addLabel('listen_to_memories');
 $script->addSay('This is where callers will be able to browse through existing memories.');
