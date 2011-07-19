@@ -30,6 +30,7 @@ watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r
 
       $script = new VoipScript('timenesia_welcome');
       $script->addSetVoice('woman');
+      $script->addSet('max_session_duration', 0);
 
       $script->addSay($p_system_greetings);
 
@@ -55,7 +56,9 @@ $script->addSay('you typed: %destination_id .');
       $script->addLabel('play_destination');
       $options['destination_id'] = '%destination_id';
       $script->addGosub('timenesia_play_destination_script', $options);
-      $script->addGotoIf('system_options', '^%invalid_extension_number == TRUE');
+$script->addSay('Back from destination with %invalid_extension_number');
+$script->addLog('%invalid_extension_number == TRUE');
+      $script->addGotoIf('system_options', '^%invalid_extension_number');
       $script->addGoto('go_back');
 
       $script->addLabel('browse_destinations');
@@ -64,9 +67,15 @@ $script->addSay('This is where callers will browse through existing destinations
       $script->addGoto('system_options');
 
       $script->addLabel('learn_more');
-      $script->addSay($p_system_description);
       $script->addSet('counter', 0);
-      $script->addGoto('system_options');
+      $input_options = array(
+        '1' => 'learn_more',
+        '#' => 'system_options',
+        'i' => 'system_options',
+        't' => 'system_options'
+      );
+      $script->addRunIvrMenu(" $p_system_description $p_system_description_menu", $input_options);
+      $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('invalid_option');
       $script->addGoto('go_back');
@@ -83,7 +92,7 @@ $script->addSay('This is where callers will browse through existing destinations
       $eid = $options['destination_id'];
       $extension = voipextension_load($eid);
       if (!$extension) {
-$script->addSay('Unknown destination number ' . $eid);
+        $script->addSay($p_invalid_location);
         $script->addSet('invalid_extension_number', TRUE);
       }
       else {

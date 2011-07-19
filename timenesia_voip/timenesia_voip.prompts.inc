@@ -16,20 +16,22 @@ $p_invalid_msg = 'Invalid option selected';
 
 // Prompts associated with the timenesia_welcome script
 
-$p_system_greetings = "Welcome to the My Dot Tour system, the best way to engage with the past, the present and the future of Fields Corner. ";
+$p_system_greetings = 'Hello and welcome to My Dot Tour: an interactive tour of Fields Corners past, present, and future. ';
 
-$p_system_menu = "Please type your location number after the beep. For a list of existing locations, press 0. To learn more about the My Dot Tour initiative, press the star key. ";
+$p_system_menu = "Main menu. Please type your location number. For a list of existing locations, press 0. To learn more about the My Dot Tour initiative, press the star key. ";
 
 $p_try_again = 'No input received. Please try again. ';
 
-$p_system_description = 'This system will allow you to record and play back stories about the past, the present and the future of Fields Corner. For additional information about this project, please check our website at my dot tour dot org.';
+$p_system_description = ' My Dot Tour is an interactive multimedia tour centered on the area of Fields Corner in Dorchester. Follow the tour to hear stories of notable places of the past, present, and future of Fields Corner. The tour stops were selected and researched by local youth with help from archives, residents, and local institutions. Hear to the voices of Fields Corner, then add yours to our growing tale of the neighborhood.  This project is organized by the Fields Corner Collaborative in collaboration with the MIT Center for Civic Media. Learn more at www dot my dot tour dot org. ';
+
+$p_system_description_menu = 'Press 1 to replay this message. Or press the pound key to go back to the main menu and begin your tour!';
 
 $p_thank_you = "Thank you for using the My Dot Tour system.";
 
 
 // Prompts associated with the timenesia_play_destination script
 
-$p_destination_greetings = 'Welcome to destination X. ';
+$p_invalid_location = 'Invalid location number. ';
 
 $p_destination_menu = 'to learn more about this location, type 1. To record a story, Press 2. To listen to existing stories, Press 3. To go back to the main menu, press the pound key.';
 
