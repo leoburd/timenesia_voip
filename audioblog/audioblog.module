@@ -221,22 +221,9 @@ function audioblog_create_node($url, $options=array()) {
  * Set the taxonomy term associated with the term name provided
  */
 function _audioblog_save_category(&$node, $vocab_name, $term_name) {
-  // determine the vocabulary id associated with the given node
-  static $vocab_id = NULL;
-
-  if(is_null($vocab_id)) {
-    $vocab_id = variable_get('audioblog_vocab_id', NULL); 
-    if(is_null($vocab_id)) {
-      $vocabs = taxonomy_get_vocabularies($node->type);
-      foreach ($vocabs as $vocab_object) {
-        if ($vocab_object->name == $vocab_name) {
-          $vocab_id = $vocab_object->vid;
-          variable_set('audioblog_vocab_id', $vocab_id);
-          break;
-        }
-      }
-    }
-  }
+// TODO: make $vocab_name optional for audioblogs
+  // determine the vocabulary id associated with $vocab_name for the given node
+  $vocab_id = _audioblog_get_vocabulary_id($node, $vocab_name);
 
   // determine the term id associated with the term name
   $terms= taxonomy_get_term_by_name($term_name);
@@ -252,6 +239,44 @@ function _audioblog_save_category(&$node, $vocab_name, $term_name) {
   $node->taxonomy[$vocab_id][$tid] = $tid;
 
   return;
+}
+
+/**
+ Get the taxonomy term associated with $vocab_name for the given node
+ */
+function _audioblog_get_category($node, $vocab_name) {
+// TODO: make $vocab_name optional for audioblogs
+  $vid = _audioblog_get_vocabulary_id($node, $vocab_name);
+  $terms = taxonomy_node_get_terms_by_vocabulary($node, $vid);
+  // retrieve the first term name
+  foreach($terms as $term) {
+    $term_name = $term->name;
+    break;
+  }
+  return $term_name;
+}
+ 
+/**
+ * Get the node's vocabulary id associated with the given vocabulary name
+ */
+function _audioblog_get_vocabulary_id($node, $vocab_name) {
+  static $vocab_id = NULL;
+
+  if(is_null($vocab_id)) {
+    $vocab_id = variable_get('audioblog_vocab_id', NULL);
+    if(is_null($vocab_id)) {
+      $vocabs = taxonomy_get_vocabularies($node->type);
+      foreach ($vocabs as $vocab_object) {
+        if ($vocab_object->name == $vocab_name) {
+          $vocab_id = $vocab_object->vid;
+          variable_set('audioblog_vocab_id', $vocab_id);
+          break;
+        }
+      }
+    }
+  }
+  
+  return $vocab_id;
 }
 
 /**

@@ -6,9 +6,10 @@
  */
 function timenesia_voip_voipscript_get_script_names() {
   $script_names[] = 'timenesia_welcome';
-  $script_names[] = 'timenesia_play_destination';
-  $script_names[] = 'timenesia_record_options';
-  $script_names[] = 'timenesia_record_memory';
+  $script_names[] = 'timenesia_play_destination_script';
+  $script_names[] = 'timenesia_record_options_script';
+  $script_names[] = 'timenesia_record_memory_script';
+  $script_names[] = 'timenesia_play_memories_script';
   return $script_names;
 }
 
@@ -121,11 +122,12 @@ $script->addSay($description);
 
         $script->addLabel('record_memory');
         $options['destination_nid'] = $destination_nid;
-        $script->addGosub('timenesia_record_options', $options);
+        $script->addGosub('timenesia_record_options_script', $options);
         $script->addGoto('destination_options');
 
         $script->addLabel('listen_to_memories');
-$script->addSay('This is where callers will be able to browse through existing memories.');
+        $options['destination_nid'] = $destination_nid;
+        $script->addGosub('timenesia_play_memories_script', $options);
         $script->addGoto('destination_options');
 
         $script->addLabel('invalid_option');
@@ -136,8 +138,8 @@ $script->addSay('This is where callers will be able to browse through existing m
 
       break;
 
-    case 'timenesia_record_options':
-      $script = new VoipScript('timenesia_record_options');
+    case 'timenesia_record_options_script':
+      $script = new VoipScript('timenesia_record_options_script');
 
       $script->addLabel('recording_menu');
       $prompt = $p_recording_menu;
@@ -155,19 +157,19 @@ $script->addSay('This is where callers will be able to browse through existing m
       $script->addLabel('past');
       $script->addSay($p_record_past);
       $options['memory_type'] = 'past';
-      $script->addGosub('timenesia_record_memory', $options);
+      $script->addGosub('timenesia_record_memory_script', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('present');
       $script->addSay($p_record_present);
       $options['memory_type'] = 'present';
-      $script->addGosub('timenesia_record_memory', $options);
+      $script->addGosub('timenesia_record_memory_script', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('future');
       $script->addSay($p_record_future);
       $options['memory_type'] = 'future';
-      $script->addGosub('timenesia_record_memory', $options);
+      $script->addGosub('timenesia_record_memory_script', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('invalid_option');
@@ -178,8 +180,8 @@ $script->addSay('This is where callers will be able to browse through existing m
 
       break;
 
-    case 'timenesia_record_memory':
-      $script = new VoipScript('timenesia_record_memory');
+    case 'timenesia_record_memory_script':
+      $script = new VoipScript('timenesia_record_memory_script');
 
       $script->addLabel('start');
       $prompt = $p_recording_prompt;
@@ -221,10 +223,19 @@ $script->addSay('This is where callers will be able to browse through existing m
       $script->addLabel('go_back');
       $script->addReturn();
       break;
+
+    case 'timenesia_play_memories_script':
+      $script = _timenesia_voip_get_play_memories_script($options['destination_nid']);
+      break;
   }
 
   return $script;
 }
+
+
+/**
+ * Internal functions
+ */
 
 function _timenesia_voip_recording_callback($destination_nid, $call_id, $recording_url, $recording_duration, $serialized_options) {
   $audioblog_options = unserialize($serialized_options);
@@ -236,3 +247,59 @@ function _timenesia_voip_recording_callback($destination_nid, $call_id, $recordi
   $rc = audioblog_recording_callback($call_id, $recording_url, $recording_duration, $serialized_options);
   return $rc;
 }
+
+function _timenesia_voip_get_play_memories_script($destination_nid) {
+  $dest_node = node_load($destination_nid);
+  $title = $node->title;
+  $destination_name = voipnode_get_title($dest_node);
+
+  $script = new VoipScript("memories for destination $destination_nid");
+
+  $memories = _timenesia_voip_get_memories_from_destination_nid($destination_nid);
+
+  if(!$memories) {
+    $p = t('We are sorry, but there are currently no stories recorded for @destination_name . ', array('@destination_name' => $destination_name));
+    $script->addSay($p);
+    $script->addGoto('go_back');
+  }
+  else {
+    foreach($memories as $memory) {
+      $p = t('Story about the @when recorded by @name. ', array('@when' => $memory['when'], '@name' => $memory['author']));
+      $script->addSay($p);
+      $script->addSay($memory['audio_url']);
+$p_next_memory_menu = t('Press any key to move to the next story, or press pound to go back to @destination_name. ', array('@destination_name' => $destination_name));
+      $script->addGetInput($p_next_memory_menu, 1, '', 3);
+      $script->addGotoIf('go_back', '^%input_digits == "#"');
+    }
+$p_no_more_memories_to_play = t('There are no more stories to be played for @destination_name. ', array('@destination_name' => $destination_name));
+    $script->addSay($p_no_more_memories_to_play);
+  }
+
+  $script->addLabel('go_back');
+
+  return $script;
+}
+
+function _timenesia_voip_get_memories_from_destination_nid($destination_nid) {
+  $memories = array();
+  $sql = "SELECT n.nid AS nid FROM {node} n LEFT JOIN {content_type_memory} memory ON n.vid = memory.vid WHERE (n.status <> 0) AND (n.type = 'memory') AND (memory.field_memory_destination_nid = '$destination_nid')";
+  $result = db_query($sql);
+  while($o = db_fetch_object($result)) {
+    $n = node_load($o->nid);
+    if($n->field_memory_audio[0]) {
+      $name = ($n->name) ? $n->name : t('Anonymous');
+      $audio_url = url($n->field_memory_audio[0]['filepath'], array('absolute' => TRUE));
+      $memories[$n->changed] = array(
+        'nid' => $n->nid,
+        'author' => $name,
+        'audio_url' => $audio_url,
+        'when' => _audioblog_get_category($n, 'When')
+      );
+    }
+  }
+  // sort array in reverse chronological order
+  krsort($memories);
+  return $memories;
+}
+
+
