@@ -26,3 +26,34 @@ function timenesia_voip_nodeapi(&$node, $op, $a3=NULL, $a4=NULL) {
   }
 }
 
+/**
+ * Internal functions
+ */
+
+function _timenesia_voip_get_memories_from_destination_nid($destination_nid) {
+  $memories = array();
+  $sql = "SELECT n.nid AS nid FROM {node} n LEFT JOIN {content_type_memory} memory ON n.vid = memory.vid WHERE (n.status <> 0) AND (n.type = 'memory') AND (memory.field_memory_destination_nid = '$destination_nid')";
+  $result = db_query($sql);
+  while($o = db_fetch_object($result)) {
+    $n = node_load($o->nid);
+    if($n->field_memory_audio[0]) {
+      $memories[] = array('nid' => $n->nid, 
+                          'changed' =>$n->changed;
+                          'audio_path' =>$n->field_memory_audio[0]['filepath'], 
+                          'category' => $n->taxonomy[1]->name);
+    }
+  }
+  return $memories;
+}
+
+function _timenesia_voip_get_play_memories_script($destination_nid) {
+  $memories = _timenesia_voip_get_memories_from_destination_nid($destination_nid);
+  if(!$memories) {
+  }
+  else {
+//header: at any point, press 1 to move to the next story, or pound to go back to the destination menu
+// loop for the stories
+// no more stories; go back
+  }
+  return $script;
+}
