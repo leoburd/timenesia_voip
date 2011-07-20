@@ -10,6 +10,7 @@ function timenesia_voip_voipscript_get_script_names() {
   $script_names[] = 'timenesia_record_options_script';
   $script_names[] = 'timenesia_record_memory_script';
   $script_names[] = 'timenesia_play_memories_script';
+  $script_names[] = 'timenesia_sms_handler_script';
   return $script_names;
 }
 
@@ -96,11 +97,8 @@ $script->addSay('This is where callers will browse through existing destinations
         $script->addSet('invalid_extension_number', FALSE);
         $destination_nid = $extension['module_id'];
         $node = node_load($destination_nid);
-//        $title = voipnode_get_title($node);
         $description = voipnode_get_description($node);
         $greeting = voipnode_get_greeting($node);
-//        $gosub = voipextension_get_script($extension);
-//        $script->addGosub($gosub['script_name'], $gosub['script_arguments']);
 
         $script->addSay($greeting);
 
@@ -117,7 +115,7 @@ $script->addSay('This is where callers will browse through existing destinations
         $script->addGoto('%ivr_option_selected');
 
         $script->addLabel('learn_more');
-$script->addSay($description);
+        $script->addSay($description);
         $script->addGoto('destination_options');
 
         $script->addLabel('record_memory');
@@ -227,6 +225,12 @@ $script->addSay($description);
     case 'timenesia_play_memories_script':
       $script = _timenesia_voip_get_play_memories_script($options['destination_nid']);
       break;
+
+    case 'timenesia_sms_handler_script':
+      $script = new VoipScript('timenesia_sms_handler_script');
+      $script->addSet('request_result', '^_timenesia_sms_parse_request(%inbound_text_contents, %caller_number)');
+      $script->addSendText("%request_result");
+      $script->addHangup();
   }
 
   return $script;
@@ -302,4 +306,16 @@ function _timenesia_voip_get_memories_from_destination_nid($destination_nid) {
   return $memories;
 }
 
-
+/**
+ * Process incoming SMS messages
+ */
+function _timenesia_sms_parse_request($msg, $from) {
+  $msg = trim($msg);
+  if (!$msg) {
+    $ret = t("Empty request received");
+  }
+  else {
+    $ret = 'Thank you for contacting the My Dot Tour system. Stay tuned!';
+  }
+  return $ret;
+}
