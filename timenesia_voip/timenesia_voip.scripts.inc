@@ -7,6 +7,7 @@
 function timenesia_voip_voipscript_get_script_names() {
   $script_names[] = 'timenesia_welcome';
   $script_names[] = 'timenesia_play_destination_script';
+  $script_names[] = 'timenesia_destination_script';
   $script_names[] = 'timenesia_record_options_script';
   $script_names[] = 'timenesia_record_memory_script';
   $script_names[] = 'timenesia_play_memories_script';
@@ -60,7 +61,13 @@ watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r
       $script->addGoto('system_options');
 
       $script->addLabel('browse_destinations');
-$script->addSay('This is where callers will browse through existing destinations.');
+      $options['module'] = 'voipnode';
+      $options['extension_type'] = 'destination';
+$p_directory_name = "My Dot Tour location's directory. ";
+      $options['p_directory_name'] = $p_directory_name;
+      $script->addGosub('voipextension_directory', $options);
+//TODO: handle extensions from directory selection
+//TODO: record directory prompts
       $script->addSet('counter', 0);
       $script->addGoto('system_options');
 
@@ -95,44 +102,54 @@ $script->addSay('This is where callers will browse through existing destinations
       else {
         $script->addSay($p_transferring_to_location . $eid . ' .');
         $script->addSet('invalid_extension_number', FALSE);
-        $destination_nid = $extension['module_id'];
-        $node = node_load($destination_nid);
-        $description = voipnode_get_description($node);
-        $greeting = voipnode_get_greeting($node);
-
-        $script->addSay($greeting);
-
-        $script->addLabel('destination_options');
-        $input_options = array(
-          '1' => 'learn_more',
-          '2' => 'record_memory',
-          '3' => 'listen_to_memories',
-          '#' => 'go_back',
-          'i' => 'invalid_option',
-          't' => 'invalid_option'
-        );
-        $script->addRunIvrMenu($p_destination_menu, $input_options);
-        $script->addGoto('%ivr_option_selected');
-
-        $script->addLabel('learn_more');
-        $script->addSay($description);
-        $script->addGoto('destination_options');
-
-        $script->addLabel('record_memory');
-        $options['destination_nid'] = $destination_nid;
-        $script->addGosub('timenesia_record_options_script', $options);
-        $script->addGoto('destination_options');
-
-        $script->addLabel('listen_to_memories');
-        $options['destination_nid'] = $destination_nid;
-        $script->addGosub('timenesia_play_memories_script', $options);
-        $script->addGoto('destination_options');
-
-        $script->addLabel('invalid_option');
-        $script->addGoto('go_back');
-
-        $script->addLabel('go_back');
+        // run the script associated with the extension
+        $gosub = voipextension_get_script($extension);
+        $options = $gosub['script_arguments'];
+        $options['eid'] = $eid;
+        $script->addGosub($gosub['script_name'], $options);
       }
+      break;
+
+    case 'timenesia_destination_script':
+      $extension = voipextension_load($options['eid']);
+      $destination_nid = $extension['module_id'];
+      $node = node_load($destination_nid);
+      $description = voipnode_get_description($node);
+      $greeting = voipnode_get_greeting($node);
+
+      $script = new VoipScript('timenesia_destination_script');
+      $script->addSay($greeting);
+
+      $script->addLabel('destination_options');
+      $input_options = array(
+        '1' => 'learn_more',
+        '2' => 'record_memory',
+        '3' => 'listen_to_memories',
+        '#' => 'go_back',
+        'i' => 'invalid_option',
+        't' => 'invalid_option'
+      );
+      $script->addRunIvrMenu($p_destination_menu, $input_options);
+      $script->addGoto('%ivr_option_selected');
+
+      $script->addLabel('learn_more');
+      $script->addSay($description);
+      $script->addGoto('destination_options');
+
+      $script->addLabel('record_memory');
+      $options['destination_nid'] = $destination_nid;
+      $script->addGosub('timenesia_record_options_script', $options);
+      $script->addGoto('destination_options');
+
+      $script->addLabel('listen_to_memories');
+      $options['destination_nid'] = $destination_nid;
+      $script->addGosub('timenesia_play_memories_script', $options);
+      $script->addGoto('destination_options');
+
+      $script->addLabel('invalid_option');
+      $script->addGoto('go_back');
+
+      $script->addLabel('go_back');
 
       break;
 
