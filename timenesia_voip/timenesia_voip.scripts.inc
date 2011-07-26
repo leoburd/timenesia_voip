@@ -35,11 +35,13 @@ watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r
       $script->addSetVoice('woman');
       $script->addSet('max_session_duration', 0);
 
-      // get the greeting message from the main neighborhood of the system
+      // get the prompt messages from the main neighborhood of the system
       $eid = variable_get('timenesia_voip_neighborhood_eid', 0);
       $extension = voipextension_load($eid);
       $node = node_load($extension['module_id']);
       $p_system_greeting = voipnode_get_greeting($node);
+      $p_system_description = voipnode_get_description($node);
+
       $script->addSay($p_system_greeting);
 
       // read destination id
