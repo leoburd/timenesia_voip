@@ -359,7 +359,12 @@ function _timenesia_sms_process_request($msg, $call_id) {
     }
     else {
       $eid = $request[1];
-// todo:  validate extension
+      // validate extension number
+      $extension = voipextension_load($eid);
+      if(!$extension || ($extension['extension_type'] != 'destination') || !$extension['enabled']) {
+        $ret = t('Invalid location number: @number', array('@number' => $eid));
+        return($ret);
+      }
       switch ($cmd) {
         default:
           $ret = t("Invalid request: $msg");
@@ -406,7 +411,7 @@ function _timenesia_sms_create_memory($text, $location_id, $call_id) {
   $body = t('Location title: @location_title, Location number: @location_id, SMS text: @text, Caller number: @caller_number, Date: @date, Call id: @call_id', $options);
   $node->body = $body;
 
-  $node->field_memory_text[0]['value'] = $text;
+  $node->field_memory_text[0]['value'] = $body;
 
   // create the node
   node_save($node);
