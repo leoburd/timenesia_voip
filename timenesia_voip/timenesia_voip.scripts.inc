@@ -19,9 +19,8 @@ function timenesia_voip_voipscript_get_script_names() {
  * Implementation of hook_voipscript_load_script()
  */
 function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
-watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r($options, true));
 
-  require(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'timenesia_voip.prompts.inc');
+  require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'timenesia_voip.prompts.inc');
 
   $script = NULL;
   switch($script_name) {
@@ -39,16 +38,16 @@ watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r
       $eid = variable_get('timenesia_voip_neighborhood_eid', 0);
       $extension = voipextension_load($eid);
       $node = node_load($extension['module_id']);
-      $p_system_greeting = voipnode_get_greeting($node);
-      $p_system_description = voipnode_get_description($node);
+      $system_greeting = voipnode_get_greeting($node);
+      $system_description = voipnode_get_description($node);
 
-      $script->addSay($p_system_greeting);
+      $script->addSay($system_greeting);
 
       // read destination id
       $script->addSet('counter', 0); // number of attemtps
 
       $script->addLabel('system_options');
-      $script->addGetInput($p_system_menu, NULL, '#', 3);
+      $script->addGetInput(v('p_system_menu'), NULL, '#', 3);
 
       $script->addSet('destination_id', '%input_digits');
       $script->addGotoIf('no_input_received', "^%input_digits == ''");
@@ -59,7 +58,7 @@ watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r
       $script->addLabel('no_input_received');
       $script->addSet('counter', '^%counter + 1');
       $script->addGotoIf('go_back', '^%counter > 3');
-      $script->addSay($p_try_again);
+      $script->addSay(v('p_try_again'));
       $script->addGoto('system_options');
 
       $script->addLabel('play_destination');
@@ -70,11 +69,8 @@ watchdog('timenesia_voip', "(load_script) name: $script_name, options: ".print_r
       $script->addLabel('browse_destinations');
       $options['module'] = 'voipnode';
       $options['extension_type'] = 'destination';
-$p_directory_name = "My Dot Tour location's directory. ";
-      $options['p_directory_name'] = $p_directory_name;
+      $options['p_directory_name'] = v('p_directory_name');
       $script->addGosub('voipextension_directory', $options);
-//TODO: handle extensions from directory selection
-//TODO: record directory prompts
       $script->addSet('counter', 0);
       $script->addGoto('system_options');
 
@@ -86,14 +82,15 @@ $p_directory_name = "My Dot Tour location's directory. ";
         'i' => 'system_options',
         't' => 'system_options'
       );
-      $script->addRunIvrMenu(" $p_system_description $p_system_description_menu", $input_options);
+      $system_description_menu = v('p_system_description_menu');
+      $script->addRunIvrMenu(" $system_description $system_description_menu ", $input_options);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('invalid_option');
       $script->addGoto('go_back');
 
       $script->addLabel('go_back');
-      $script->addSay($p_thank_you);
+      $script->addSay(v('p_thank_you'));
       $script->addHangup();
 
       break;
@@ -103,11 +100,11 @@ $p_directory_name = "My Dot Tour location's directory. ";
       $eid = $options['destination_id'];
       $extension = voipextension_load($eid);
       if (!$extension) {
-        $script->addSay($p_invalid_location);
+        $script->addSay(v('p_invalid_location'));
         $script->addSet('invalid_extension_number', TRUE);
       }
       else {
-        $script->addSay($p_transferring_to_location . $eid . ' .');
+        $script->addSay(v('p_transferring_to_location') . $eid . ' .');
         $script->addSet('invalid_extension_number', FALSE);
         // run the script associated with the extension
         $gosub = voipextension_get_script($extension);
@@ -136,7 +133,7 @@ $p_directory_name = "My Dot Tour location's directory. ";
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($p_destination_menu, $input_options);
+      $script->addRunIvrMenu(v('p_destination_menu'), $input_options);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('learn_more');
@@ -164,7 +161,7 @@ $p_directory_name = "My Dot Tour location's directory. ";
       $script = new VoipScript('timenesia_record_options_script');
 
       $script->addLabel('recording_menu');
-      $prompt = $p_recording_menu;
+      $prompt = v('p_recording_menu');
       $input_options = array(
         '1' => 'past',
         '2' => 'present',
@@ -177,19 +174,19 @@ $p_directory_name = "My Dot Tour location's directory. ";
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('past');
-      $script->addSay($p_record_past);
+      $script->addSay(v('p_record_past'));
       $options['memory_type'] = 'past';
       $script->addGosub('timenesia_record_memory_script', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('present');
-      $script->addSay($p_record_present);
+      $script->addSay(v('p_record_present'));
       $options['memory_type'] = 'present';
       $script->addGosub('timenesia_record_memory_script', $options);
       $script->addGoto('go_back');
 
       $script->addLabel('future');
-      $script->addSay($p_record_future);
+      $script->addSay(v('p_record_future'));
       $options['memory_type'] = 'future';
       $script->addGosub('timenesia_record_memory_script', $options);
       $script->addGoto('go_back');
@@ -206,14 +203,14 @@ $p_directory_name = "My Dot Tour location's directory. ";
       $script = new VoipScript('timenesia_record_memory_script');
 
       $script->addLabel('start');
-      $prompt = $p_recording_prompt;
+      $prompt = v('p_recording_prompt');
       $timeout = 5;
       $end_key = '#';
       $max_length = AUDIOBLOG_MAX_STORY_DURATION;
       $script->addRecord($prompt, $timeout, $end_key, $max_length);
 
       $script->addLabel('accept_menu');
-      $prompt = $p_recording_confirmation; 
+      $prompt = v('p_recording_confirmation'); 
       $input_options = array(
         '1' => 'play_recording',
         '2' => 'accept_recording',
@@ -229,7 +226,7 @@ $p_directory_name = "My Dot Tour location's directory. ";
       $script->addGoto('go_back');
 
       $script->addLabel('play_recording');
-      $script->addSay($p_recording_playback);
+      $script->addSay(v('p_recording_playback'));
       $script->addSay('%recording_url');
       $script->addGoto('accept_menu');
 
@@ -239,7 +236,7 @@ $p_directory_name = "My Dot Tour location's directory. ";
       $script->addSet('callback_result',
         "^_timenesia_voip_recording_callback($destination_nid, %call_id, %recording_url, %recording_duration, '$serialized_options')");
 // TODO: check callback result
-      $script->addSay($p_story_accepted);
+      $script->addSay(v('p_story_accepted'));
       $script->addGoto('go_back');
 
       $script->addLabel('go_back');
@@ -304,12 +301,14 @@ function _timenesia_voip_get_play_memories_script($destination_nid) {
       $p = t('Story about the @when recorded by @name. ', array('@when' => $memory['when'], '@name' => $memory['author']));
       $script->addSay($p);
       $script->addGetInput($memory['audio_url'], 1, '', 3);
-$p_next_memory_menu = t('Press any key to move to the next story, or press pound to go back to @destination_name. ', array('@destination_name' => $destination_name));
-      $script->addGetInput($p_next_memory_menu, 1, '', 3);
+$next_memory_options = v('p_next_memory_menu');
+$next_memory_menu = t('@next_memory_menu @destination_name. ', array('@next_memory_menu' => $next_memory_options, '@destination_name' => $destination_name));
+      $script->addGetInput($next_memory_menu, 1, '', 3);
       $script->addGotoIf('go_back', '^%input_digits == "#"');
     }
-$p_no_more_memories_to_play = t('There are no more stories to be played for @destination_name. ', array('@destination_name' => $destination_name));
-    $script->addSay($p_no_more_memories_to_play);
+$no_more = v('p_no_more_memories_to_play');
+$no_more_memories_to_play = t('@no_more @destination_name', array('@no_more' => $no_more, '@destination_name' => $destination_name));
+    $script->addSay("$no_more_memories_to_play");
   }
 
   $script->addLabel('go_back');
