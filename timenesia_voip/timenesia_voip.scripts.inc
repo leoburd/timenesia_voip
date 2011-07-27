@@ -294,7 +294,7 @@ function _timenesia_voip_get_play_memories_script($destination_nid) {
     foreach($memories as $memory) {
       $p = t('Story about the @when recorded by @name. ', array('@when' => $memory['when'], '@name' => $memory['author']));
       $script->addSay($p);
-      $script->addSay($memory['audio_url']);
+      $script->addGetInput($memory['audio_url'], 1, '', 3);
 $p_next_memory_menu = t('Press any key to move to the next story, or press pound to go back to @destination_name. ', array('@destination_name' => $destination_name));
       $script->addGetInput($p_next_memory_menu, 1, '', 3);
       $script->addGotoIf('go_back', '^%input_digits == "#"');
