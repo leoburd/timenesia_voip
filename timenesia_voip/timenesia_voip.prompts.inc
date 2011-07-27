@@ -64,7 +64,7 @@ $timenesia_prompts['p_invalid_location']['en']['text'] = 'Invalid location numbe
 $timenesia_prompts['p_transferring_to_location']['en']['text'] = 'Transferring to location number ';
 
 $timenesia_prompts['p_destination_menu']['en']['text'] = 'To learn more about this location, type 1. To record a story, Press 2. To listen to existing stories, Press 3. To go back to the main menu, press the pound key.';
-$timenesia_prompts['p_destination_menu']['en']['file_name'] = 'p_try_again.mp3';
+$timenesia_prompts['p_destination_menu']['en']['file_name'] = 'p_destination_menu.mp3';
 
 
 // Prompts associated with the timenesia_record_options menu
