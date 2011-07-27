@@ -252,9 +252,18 @@ $p_directory_name = "My Dot Tour location's directory. ";
 
     case 'timenesia_sms_handler_script':
       $script = new VoipScript('timenesia_sms_handler_script');
-      $script->addSet('request_result', '^_timenesia_sms_parse_request(%inbound_text_contents, %caller_number)');
-      $script->addSendText("%request_result");
+      // below was the only way to avoid problems with special characters in the text message
+      $options['text'] = '%inbound_text_contents';
+      $options['call_id'] = '%call_id';
+      $script->addGosub('timenesia_sms_process_request_script', $options);
+      break;
+
+    case 'timenesia_sms_process_request_script':
+      $script = new VoipScript('timenesia_sms_process_request_script');
+      $result = _timenesia_sms_process_request($options['text'], $options['call_id']);
+      $script->addSendText($result);
       $script->addHangup();
+      break;
   }
 
   return $script;
@@ -333,13 +342,75 @@ function _timenesia_voip_get_memories_from_destination_nid($destination_nid) {
 /**
  * Process incoming SMS messages
  */
-function _timenesia_sms_parse_request($msg, $from) {
+function _timenesia_sms_process_request($msg, $call_id) {
+   $help_msg = t("Available commands: a) S NUMBER XXXXX (submit story XXXXX to location NUMBER); b) ? (this help message)");
   $msg = trim($msg);
   if (!$msg) {
-    $ret = t("Empty request received");
+    $ret = t("Empty request.") . ' ' . $help_msg;
   }
   else {
-    $ret = 'Thank you for contacting the My Dot Tour system. Stay tuned!';
+    $request = explode(" ", $msg);
+    $cmd = strtoupper($request[0]);
+    if ($cmd == '?') {
+      $ret = $help_msg;
+    }
+    else if (count($request)<2) {
+      $ret = t("Invalid request.") . ' ' . $help_msg;
+    }
+    else {
+      $eid = $request[1];
+// todo:  validate extension
+      switch ($cmd) {
+        default:
+          $ret = t("Invalid request: $msg");
+          break;
+        case "S":
+          // Submit story
+          unset($request[0]);
+          unset($request[1]);
+          $text = implode(" ", $request);
+            if(empty($text)) {
+            return t("Story can't be empty.");
+          }
+          _timenesia_sms_create_memory($text, $eid, $call_id);
+          $options = array('@eid' => $eid);
+          $ret = t("Your story has been added to location @eid. Thanks! --the My Dot Tour team", $options);
+          break;
+      }
+    }
   }
   return $ret;
 }
+
+/**
+ * Create SMS memory
+ */
+function _timenesia_sms_create_memory($text, $location_id, $call_id) {
+  $node->type = 'memory';
+  $node->promote = FALSE;
+
+  $extension = voipextension_load($location_id);
+  $nid = $extension['module_id'];
+  $node->memory_destination = $nid;
+
+  $location_title = $extension['title'];
+
+  $cid = VoipCall::getCidFromCallId($call_id);
+  $call = VoipCall::load($cid);
+  $caller_number = $call->getCallerNumber();
+
+  $date = format_date(time());
+
+  $options = array('@text' => $text, '@location_id' => $location_id, '@call_id' => $call_id, '@location_title' => $location_title, '@caller_number' => $caller_number, '@date' => $date);
+  $node->title = t('New SMS memory for @location_title (@location_id) from @caller_number', $options);
+  $body = t('Location title: @location_title, Location number: @location_id, SMS text: @text, Caller number: @caller_number, Date: @date, Call id: @call_id', $options);
+  $node->body = $body;
+
+  $node->field_memory_text[0]['value'] = $text;
+
+  // create the node
+  node_save($node);
+
+  // TODO: send notification
+}
+
