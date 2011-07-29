@@ -342,7 +342,8 @@ function _timenesia_voip_get_memories_from_destination_nid($destination_nid) {
  * Process incoming SMS messages
  */
 function _timenesia_sms_process_request($msg, $call_id) {
-   $help_msg = t("Available commands: a) S NUMBER XXXXX (submit story XXXXX to location NUMBER); b) ? (this help message)");
+   $help_msg = t("To submit a comment, please text us the location's spot number followed by space and the actual comment.");
+   $help_msg_full = t("To submit a comment, please text us the location's spot number followed by space and the actual comment. Example: '113 I love The Buddhist Center!'");
   $msg = trim($msg);
   if (!$msg) {
     $ret = t("Empty request.") . ' ' . $help_msg;
@@ -351,36 +352,28 @@ function _timenesia_sms_process_request($msg, $call_id) {
     $request = explode(" ", $msg);
     $cmd = strtoupper($request[0]);
     if ($cmd == '?') {
-      $ret = $help_msg;
+      $ret = $help_msg_full;
     }
     else if (count($request)<2) {
       $ret = t("Invalid request.") . ' ' . $help_msg;
     }
     else {
-      $eid = $request[1];
+      $eid = $cmd;
       // validate extension number
       $extension = voipextension_load($eid);
       if(!$extension || ($extension['extension_type'] != 'destination') || !$extension['enabled']) {
-        $ret = t('Invalid location number: @number', array('@number' => $eid));
+        $ret = t('Invalid location number: @number. Please, try again.', array('@number' => $eid));
         return($ret);
       }
-      switch ($cmd) {
-        default:
-          $ret = t("Invalid request: $msg");
-          break;
-        case "S":
-          // Submit story
-          unset($request[0]);
-          unset($request[1]);
-          $text = implode(" ", $request);
-            if(empty($text)) {
-            return t("Story can't be empty.");
-          }
-          _timenesia_sms_create_memory($text, $eid, $call_id);
-          $options = array('@eid' => $eid);
-          $ret = t("Your story has been added to location @eid. Thanks! --the My Dot Tour team", $options);
-          break;
+      // Submit story / comment
+      unset($request[0]);
+      $text = implode(" ", $request);
+      if(empty($text)) {
+        return t("Comments can't be empty." . ' ' . $help_msg);
       }
+      _timenesia_sms_create_memory($text, $eid, $call_id);
+      $options = array('@eid' => $eid);
+      $ret = t("Your comment has been added to location @eid. Thanks! --the My Dot Tour team", $options);
     }
   }
   return $ret;
