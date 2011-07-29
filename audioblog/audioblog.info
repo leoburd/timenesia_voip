@@ -1,6 +1,0 @@
-core = "6.x"
-dependencies[] = "voipcall"
-description = "Enables users to create and access audio blog entries via telephone"
-name = "Audio Blog"
-package = "audioblog"
-project = "audioblog"
