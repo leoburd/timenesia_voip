@@ -272,13 +272,13 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
  */
 
 function _timenesia_voip_recording_callback($destination_nid, $call_id, $recording_url, $recording_duration, $serialized_options) {
-  $audioblog_options = unserialize($serialized_options);
-  $audioblog_options['node_type'] = 'memory';
-  $audioblog_options['audio_field_name'] = 'field_memory_audio';
-  $audioblog_options['audioblog_type'] = $audioblog_options['memory_type'];
-  $audioblog_options['memory_destination'] = $destination_nid;
-  $serialized_options = serialize($audioblog_options);
-  $rc = audioblog_recording_callback($call_id, $recording_url, $recording_duration, $serialized_options);
+  $voipblog_options = unserialize($serialized_options);
+  $voipblog_options['node_type'] = 'memory';
+  $voipblog_options['audio_field_name'] = 'field_memory_audio';
+  $voipblog_options['voipblog_type'] = $voipblog_options['memory_type'];
+  $voipblog_options['memory_destination'] = $destination_nid;
+  $serialized_options = serialize($voipblog_options);
+  $rc = voipblog_recording_callback($call_id, $recording_url, $recording_duration, $serialized_options);
   return $rc;
 }
 
@@ -329,7 +329,7 @@ function _timenesia_voip_get_memories_from_destination_nid($destination_nid) {
         'nid' => $n->nid,
         'author' => $name,
         'audio_url' => $audio_url,
-        'when' => _audioblog_get_category($n, 'When')
+        'when' => _voipblog_get_category($n, 'When')
       );
     }
   }

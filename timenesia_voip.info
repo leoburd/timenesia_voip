@@ -1,5 +1,5 @@
 core = "6.x"
-dependencies[] = "audioblog"
+dependencies[] = "voipblog"
 description = "Provides VoIP Drupal scripts for the timenesia project."
 name = "timenesia voip"
 package = "timenesia"
