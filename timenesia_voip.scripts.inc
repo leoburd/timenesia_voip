@@ -269,7 +269,13 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
       $script = new VoipScript('timenesia_sms_process_request_script');
       $result = _timenesia_sms_process_request($options['text'], $options['call_id']);
       // send response in chunks of 160 characteres
-      $text_array = str_split($result, 160);
+      if(strlen($result) <= 160) {
+        $text_array[] = $result;
+      }
+      else {
+        $tmp = wordwrap($result, 160, '\n');
+        $text_array = explode('\n', $tmp);
+      }
       foreach($text_array as $text) {
         $script->addSendText($text);
 $script->addLog("sending $text");
