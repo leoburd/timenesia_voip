@@ -41,6 +41,11 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
       $system_greeting = voipnode_get_greeting($node);
       $system_description = voipnode_get_description($node);
 
+      // log the call
+      $log_msg = t("Call from %caller_number on @date (id: %call_id)",
+          array('@date' => format_date(time())));
+      $script->addLog($log_msg, 'MDT');
+
       $script->addSay($system_greeting);
 
       // read destination id
@@ -249,6 +254,11 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
 
     case 'timenesia_sms_handler_script':
       $script = new VoipScript('timenesia_sms_handler_script');
+      // log the sms
+      $log_msg = t("SMS from %caller_number on @date (id: %call_id)",
+          array('@date' => format_date(time())));
+      $script->addLog($log_msg, 'MDT');
+
       // below was the only way to avoid problems with special characters in the text message
       $options['text'] = '%inbound_text_contents';
       $options['call_id'] = '%call_id';
@@ -258,7 +268,12 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
     case 'timenesia_sms_process_request_script':
       $script = new VoipScript('timenesia_sms_process_request_script');
       $result = _timenesia_sms_process_request($options['text'], $options['call_id']);
-      $script->addSendText($result);
+      // send response in chunks of 160 characteres
+      $text_array = str_split($result, 160);
+      foreach($text_array as $text) {
+        $script->addSendText($text);
+$script->addLog("sending $text");
+      }
       $script->addHangup();
       break;
   }
@@ -342,8 +357,7 @@ function _timenesia_voip_get_memories_from_destination_nid($destination_nid) {
  * Process incoming SMS messages
  */
 function _timenesia_sms_process_request($msg, $call_id) {
-   $help_msg = t("To submit a comment, please text us the location's spot number followed by space and the actual comment.");
-   $help_msg_full = t("To submit a comment, please text us the location's spot number followed by space and the actual comment. Example: '113 I love The Buddhist Center!'");
+   $help_msg = t("To submit a comment, please text us the location's number followed by space and the actual comment.");
   $msg = trim($msg);
   if (!$msg) {
     $ret = t("Empty request.") . ' ' . $help_msg;
@@ -352,7 +366,11 @@ function _timenesia_sms_process_request($msg, $call_id) {
     $request = explode(" ", $msg);
     $cmd = strtoupper($request[0]);
     if ($cmd == '?') {
-      $ret = $help_msg_full;
+      $ret = $help_msg;
+      $dir = _timenesia_get_sms_directory();
+      if($dir) {
+        $ret .= t(" Available location numbers: @list.", array('@list' => $dir));
+      }
     }
     else if (count($request)<2) {
       $ret = t("Invalid request.") . ' ' . $help_msg;
@@ -362,7 +380,8 @@ function _timenesia_sms_process_request($msg, $call_id) {
       // validate extension number
       $extension = voipextension_load($eid);
       if(!$extension || ($extension['extension_type'] != 'destination') || !$extension['enabled']) {
-        $ret = t('Invalid location number: @number. Please, try again.', array('@number' => $eid));
+        $dir = _timenesia_get_sms_directory();
+        $ret = t('Invalid location number: @number. Please, try one of the following: @list.', array('@number' => $eid, '@list' => $dir));
         return($ret);
       }
       // Submit story / comment
@@ -411,3 +430,27 @@ function _timenesia_sms_create_memory($text, $location_id, $call_id) {
   // TODO: send notification
 }
 
+/**
+ * Get SMS directory listing
+ */
+function _timenesia_get_sms_directory() {
+  $text = NULL;
+  $rx = voipextension_load_module_extensions('voipnode', 'destination');
+
+  if($rx) {
+    // sort extensions by their text title
+    function _voipextension_sort_by_title($x1, $x2) {
+        return strnatcmp($x1['title'], $x2['title']); }
+    uasort($rx, '_voipextension_sort_by_title');
+
+    foreach($rx as $x) {
+      $number = $x['eid'];
+      $title = $x['title'];
+      $dir[] = t('@title: number @number',
+                   array('@title' => $title, '@number' => $number));
+    }
+  }
+
+  $text = implode(", ", $dir);
+  return $text;
+}

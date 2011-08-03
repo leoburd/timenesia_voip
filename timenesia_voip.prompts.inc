@@ -29,6 +29,17 @@ if(!$timenesia_prompts[$index]) { watchdog('debug', "missing $index"); }
   return $rc;
 }
 
+function timenesia_get_missing_prompt_recordings_list($language='en') {
+  global $timenesia_prompts;
+  foreach($timenesia_prompts as $prompt) {
+    if(!$prompt[$language]['file_name']) {
+      $list[] = $prompt[$language]['text'];
+    } 
+  }
+  return $list;
+}
+
+
 /**
  * Prompts
  */
