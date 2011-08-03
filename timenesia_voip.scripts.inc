@@ -316,13 +316,13 @@ function _timenesia_voip_get_play_memories_script($destination_nid) {
       $p = t('Story about the @when recorded by @name. ', array('@when' => $memory['when'], '@name' => $memory['author']));
       $script->addSay($p);
       $script->addGetInput($memory['audio_url'], 1, '', 3);
-$next_memory_options = v('p_next_memory_menu');
-$next_memory_menu = t('@next_memory_menu @destination_name. ', array('@next_memory_menu' => $next_memory_options, '@destination_name' => $destination_name));
+      $next_memory_options = v('p_next_memory_menu');
+      $next_memory_menu = t('@next_memory_menu @destination_name. ', array('@next_memory_menu' => $next_memory_options, '@destination_name' => $destination_name));
       $script->addGetInput($next_memory_menu, 1, '', 3);
       $script->addGotoIf('go_back', '^%input_digits == "#"');
     }
-$no_more = v('p_no_more_memories_to_play');
-$no_more_memories_to_play = t('@no_more @destination_name', array('@no_more' => $no_more, '@destination_name' => $destination_name));
+    $no_more = v('p_no_more_memories_to_play');
+    $no_more_memories_to_play = t('@no_more @destination_name', array('@no_more' => $no_more, '@destination_name' => $destination_name));
     $script->addSay("$no_more_memories_to_play");
   }
 
