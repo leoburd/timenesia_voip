@@ -211,7 +211,7 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
       $prompt = v('p_recording_prompt');
       $timeout = 5;
       $end_key = '#';
-      $max_length = AUDIOBLOG_MAX_STORY_DURATION;
+      $max_length = VOIPBLOG_MAX_STORY_DURATION;
       $script->addRecord($prompt, $timeout, $end_key, $max_length);
 
       $script->addLabel('accept_menu');
@@ -236,10 +236,10 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
       $script->addGoto('accept_menu');
 
       $script->addLabel('accept_recording');
-      $serialized_options = serialize($options);
+      $encoded_options = addslashes(json_encode($options));
       $destination_nid = $options['destination_nid'];
       $script->addSet('callback_result',
-        "^_timenesia_voip_recording_callback($destination_nid, %call_id, %recording_url, %recording_duration, '$serialized_options')");
+        "^_timenesia_voip_recording_callback($destination_nid, %call_id, %recording_url, %recording_duration, '$encoded_options')");
 // TODO: check callback result
       $script->addSay(v('p_story_accepted'));
       $script->addGoto('go_back');
@@ -292,8 +292,8 @@ $script->addLog("sending $text");
  * Internal functions
  */
 
-function _timenesia_voip_recording_callback($destination_nid, $call_id, $recording_url, $recording_duration, $serialized_options) {
-  $voipblog_options = unserialize($serialized_options);
+function _timenesia_voip_recording_callback($destination_nid, $call_id, $recording_url, $recording_duration, $encoded_options) {
+  $voipblog_options = (array)json_decode(stripslashes($encoded_options));
   $voipblog_options['node_type'] = 'memory';
   $voipblog_options['audio_field_name'] = 'field_memory_audio';
   $voipblog_options['voipblog_type'] = $voipblog_options['memory_type'];
