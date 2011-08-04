@@ -83,14 +83,16 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
 
       $script->addLabel('learn_more');
       $script->addSet('counter', 0);
+      $system_description_menu = v('p_system_description_menu');
+      $prompt = " $system_description $system_description_menu ";
       $input_options = array(
         '1' => 'learn_more',
         '#' => 'system_options',
         'i' => 'system_options',
         't' => 'system_options'
       );
-      $system_description_menu = v('p_system_description_menu');
-      $script->addRunIvrMenu(" $system_description $system_description_menu ", $input_options);
+      $p_invalid_msg = v('p_invalid_msg');
+      $script->addRunIvrMenu($prompt, $input_options, $p_invalid_msg);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('invalid_option');
@@ -132,6 +134,7 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
       $script->addSay($greeting);
 
       $script->addLabel('destination_options');
+      $prompt = v('p_destination_menu');
       $input_options = array(
         '1' => 'learn_more',
         '2' => 'record_memory',
@@ -140,7 +143,8 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu(v('p_destination_menu'), $input_options);
+      $p_invalid_msg = v('p_invalid_msg');
+      $script->addRunIvrMenu($prompt, $input_options, $p_invalid_msg);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('learn_more');
@@ -177,7 +181,8 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($prompt, $input_options);
+      $p_invalid_msg = v('p_invalid_msg');
+      $script->addRunIvrMenu($prompt, $input_options, $p_invalid_msg);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('past');
@@ -226,7 +231,8 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
         'i' => 'invalid_option',
         't' => 'invalid_option'
       );
-      $script->addRunIvrMenu($prompt, $input_options);
+      $p_invalid_msg = v('p_invalid_msg');
+      $script->addRunIvrMenu($prompt, $input_options, $p_invalid_msg);
       $script->addGoto('%ivr_option_selected');
 
       $script->addLabel('invalid_option');
