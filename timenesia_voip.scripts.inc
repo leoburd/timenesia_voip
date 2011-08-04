@@ -109,7 +109,7 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
         $script->addSet('invalid_extension_number', TRUE);
       }
       else {
-        $script->addSay(v('p_transferring_to_location') . $eid . ' .');
+        $script->addSay(v('p_transferring_to_location') . " $eid.");
         $script->addSet('invalid_extension_number', FALSE);
         // run the script associated with the extension
         $gosub = voipextension_get_script($extension);
