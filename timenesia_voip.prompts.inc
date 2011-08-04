@@ -58,13 +58,19 @@ $timenesia_prompts['p_system_menu']['en']['text'] = "Main menu. Please type your
 $timenesia_prompts['p_system_menu']['en']['file_name'] = "p_system_menu.mp3";
 
 $timenesia_prompts['p_try_again']['en']['text'] = 'No input received. Please try again. ';
-$timenesia_prompts['p_try_again']['en']['file_name'] = 'p_try_again2.mp3';
+//$timenesia_prompts['p_try_again']['en']['file_name'] = 'p_try_again2.mp3';
+$timenesia_prompts['p_try_again']['en']['file_name'] = 'p_enter_again.mp3';
 
 $timenesia_prompts['p_system_description']['en']['text'] = ' My Dot Tour is an interactive multimedia tour centered on the area of Fields Corner in Dorchester. Follow the tour to hear stories of notable places of the past, present, and future of Fields Corner. The tour stops were selected and researched by local youth with help from archives, residents, and local institutions. Hear to the voices of Fields Corner, then add yours to our growing tale of the neighborhood.  This project is organized by the Fields Corner Collaborative in collaboration with the MIT Center for Civic Media. Learn more at www dot my dot tour dot org. ';
 
 $timenesia_prompts['p_directory_name']['en']['text'] = "My Dot Tour location's directory. ";
 $timenesia_prompts['p_directory_name']['en']['file_name'] = 'p_my_dot_tour_directory.mp3';
 
+$timenesia_prompts['p_directory_instructions']['en']['text'] = "At any time, press the desired extension number or press the pound key to go back to the previous menu. ";
+$timenesia_prompts['p_directory_instructions']['en']['file_name'] = 'p_at_any_time.mp3';
+
+$timenesia_prompts['p_invalid_extension']['en']['text'] = 'Invalid extension number. Please try again. ';
+$timenesia_prompts['p_invalid_extension']['en']['file_name'] = 'p_invalid_try_again.mp3';
 
 $timenesia_prompts['p_system_description_menu']['en']['text'] = 'Press 1 to replay this message. Or press the pound key to go back to the main menu and begin your tour!';
 $timenesia_prompts['p_system_description_menu']['en']['file_name'] = 'p_system_description_menu.mp3';
@@ -102,8 +108,9 @@ $timenesia_prompts['p_record_future']['en']['file_name'] = 'p_record_future.mp3'
 
 // Prompts associated with the timenesia_record_memory script
 
-$timenesia_prompts['p_recording_prompt']['en']['text'] = 'Please record your story after the beep. When done, press the pound key.';
-$timenesia_prompts['p_recording_prompt']['en']['file_name'] = 'p_recording_prompt.mp3';
+$timenesia_prompts['p_recording_prompt']['en']['text'] = 'Please record your name and your story after the beep. When done, press the pound key.';
+//$timenesia_prompts['p_recording_prompt']['en']['file_name'] = 'p_recording_prompt.mp3';
+$timenesia_prompts['p_recording_prompt']['en']['file_name'] = 'p_record_name_story.mp3';
 $timenesia_prompts['p_recording_confirmation']['en']['text'] = 'To hear your recording, press 1. To accept your recording, press 2. To record once again, press the star key.';
 $timenesia_prompts['p_recording_confirmation']['en']['file_name'] = 'p_recording_confirmation.mp3';
 $timenesia_prompts['p_recording_playback']['en']['text'] = 'This is what you recorded: ';

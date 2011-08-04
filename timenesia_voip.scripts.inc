@@ -75,6 +75,8 @@ function timenesia_voip_voipscript_load_script($script_name, $options=NULL) {
       $options['module'] = 'voipnode';
       $options['extension_type'] = 'destination';
       $options['p_directory_name'] = v('p_directory_name');
+      $options['p_directory_instructions'] = v('p_directory_instructions');
+      $options['p_invalid_extension'] = v('p_invalid_extension');
       $script->addGosub('voipextension_directory', $options);
       $script->addSet('counter', 0);
       $script->addGoto('system_options');
